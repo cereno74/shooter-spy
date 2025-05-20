@@ -1,0 +1,111 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Screen settings
+WIDTH, HEIGHT = 600, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Space Shooter")
+
+# Load images
+player_img = pygame.image.load("player.png")
+enemy_img = pygame.image.load("enemy.png")
+bullet_img = pygame.image.load("bullet.png")
+
+# Scale images
+player_img = pygame.transform.scale(player_img, (60, 60))
+enemy_img = pygame.transform.scale(enemy_img, (50, 50))
+bullet_img = pygame.transform.scale(bullet_img, (10, 30))
+
+# Clock and font
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("arial", 36)
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
+# Game variables
+player_x = WIDTH // 2
+player_y = HEIGHT - 80
+player_speed = 7
+
+bullets = []
+bullet_speed = 8
+
+enemies = []
+enemy_speed = 3
+
+score = 0
+
+# Create enemies
+def spawn_enemy():
+    x = random.randint(50, WIDTH - 50)
+    y = random.randint(-100, -40)
+    enemies.append(pygame.Rect(x, y, 50, 50))
+
+for _ in range(5):
+    spawn_enemy()
+
+# Main game loop
+running = True
+while running:
+    clock.tick(60)
+    screen.fill(BLACK)
+
+    # --- Events ---
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # --- Key Presses ---
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player_x > 0:
+        player_x -= player_speed
+    if keys[pygame.K_RIGHT] and player_x < WIDTH - 60:
+        player_x += player_speed
+    if keys[pygame.K_SPACE]:
+        if len(bullets) < 5:  # Limit bullet spam
+            bullets.append(pygame.Rect(player_x + 25, player_y, 10, 30))
+
+    # --- Update Bullets ---
+    for bullet in bullets[:]:
+        bullet.y -= bullet_speed
+        if bullet.y < 0:
+            bullets.remove(bullet)
+
+    # --- Update Enemies ---
+    for enemy in enemies[:]:
+        enemy.y += enemy_speed
+        if enemy.y > HEIGHT:
+            enemies.remove(enemy)
+            spawn_enemy()
+
+    # --- Collision Detection ---
+    for bullet in bullets[:]:
+        for enemy in enemies[:]:
+            if bullet.colliderect(enemy):
+                bullets.remove(bullet)
+                enemies.remove(enemy)
+                spawn_enemy()
+                score += 1
+                break
+
+    # --- Draw Everything ---
+    screen.blit(player_img, (player_x, player_y))
+    
+    for bullet in bullets:
+        screen.blit(bullet_img, (bullet.x, bullet.y))
+
+    for enemy in enemies:
+        screen.blit(enemy_img, (enemy.x, enemy.y))
+
+    # Draw score
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    screen.blit(score_text, (10, 10))
+
+    pygame.display.flip()
+
+pygame.quit()
